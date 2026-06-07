@@ -16,4 +16,5 @@ urlpatterns = [
     path('api/leaves/', include('apps.leaves.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/subscriptions/', include('apps.subscriptions.urls')),
+    path('api/ai/', include('apps.ai_engine.urls')),
 ]
