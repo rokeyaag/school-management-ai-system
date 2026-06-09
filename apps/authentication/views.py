@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, ChangePasswordSerializer
+from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer
 
 
 def get_tokens(user):
@@ -33,16 +33,24 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
-    serializer = LoginSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.validated_data['user']
-        tokens = get_tokens(user)
-        return Response({
-            'user': UserSerializer(user).data,
-            'tokens': tokens,
-            'message': 'Login successful'
-        })
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    email = request.data.get('email', '')
+    password = request.data.get('password', '')
+
+    try:
+        user = CustomUser.objects.get(email=email)
+        if user.check_password(password):
+            if not user.is_active:
+                return Response({'error': 'Account is disabled'}, status=status.HTTP_400_BAD_REQUEST)
+            tokens = get_tokens(user)
+            return Response({
+                'user': UserSerializer(user).data,
+                'tokens': tokens,
+                'message': 'Login successful'
+            })
+        else:
+            return Response({'non_field_errors': ['Invalid email or password']}, status=status.HTTP_400_BAD_REQUEST)
+    except CustomUser.DoesNotExist:
+        return Response({'non_field_errors': ['Invalid email or password']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])

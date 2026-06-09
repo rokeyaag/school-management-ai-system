@@ -15,13 +15,38 @@ class Student(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='student_profile')
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='students')
     student_id = models.CharField(max_length=20, unique=True)
-    class_name = models.ForeignKey('academics.Class', on_delete=models.SET_NULL, null=True, related_name='students')
-    section = models.ForeignKey('academics.Section', on_delete=models.SET_NULL, null=True, related_name='students')
+    class_name = models.ForeignKey('academics.Class', on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
+    section = models.ForeignKey('academics.Section', on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
+    roll = models.CharField(max_length=20, blank=True)
+
+    # Personal info
+    name_bangla = models.CharField(max_length=200, blank=True)
     dob = models.DateField(null=True, blank=True)
+    birth_reg_no = models.CharField(max_length=50, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True)
     blood_group = models.CharField(max_length=5, choices=BLOOD_GROUP_CHOICES, blank=True)
-    address = models.TextField(blank=True)
     religion = models.CharField(max_length=20, blank=True)
+    photo = models.URLField(blank=True)
+
+    # Address
+    present_address = models.TextField(blank=True)
+    permanent_address = models.TextField(blank=True)
+
+    # Father info
+    father_name = models.CharField(max_length=150, blank=True)
+    father_nid = models.CharField(max_length=30, blank=True)
+    father_mobile = models.CharField(max_length=20, blank=True)
+
+    # Mother info
+    mother_name = models.CharField(max_length=150, blank=True)
+    mother_nid = models.CharField(max_length=30, blank=True)
+    mother_mobile = models.CharField(max_length=20, blank=True)
+
+    # Guardian info
+    guardian_name = models.CharField(max_length=150, blank=True)
+    guardian_mobile = models.CharField(max_length=20, blank=True)
+    guardian_relation = models.CharField(max_length=50, blank=True)
+
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

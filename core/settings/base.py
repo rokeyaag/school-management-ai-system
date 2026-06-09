@@ -142,3 +142,6 @@ CORS_ALLOW_CREDENTIALS = True
 GROQ_API_KEY = config('GROQ_API_KEY', default='')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTHENTICATION_BACKENDS = [
+    'apps.authentication.backends.EmailBackend',
+]
