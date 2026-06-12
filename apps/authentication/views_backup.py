@@ -1,4 +1,4 @@
-from rest_framework import status
+﻿from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -87,16 +87,3 @@ def change_password(request):
         request.user.save()
         return Response({'message': 'Password changed successfully'})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def forgot_password(request):
-    email = request.data.get('email', '').strip()
-    if not email:
-        return Response({'error': 'Email required'}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        user = CustomUser.objects.get(email=email)
-        return Response({'message': 'Password reset link sent to your email.'})
-    except CustomUser.DoesNotExist:
-        return Response({'error': 'Email not found'}, status=status.HTTP_404_NOT_FOUND)
