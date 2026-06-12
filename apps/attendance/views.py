@@ -7,19 +7,25 @@ from .models import Attendance
 from .serializers import AttendanceSerializer
 from apps.students.models import Student
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def attendance_list(request):
     school = request.user.school
     date = request.query_params.get('date', str(today_date.today()))
-    attendances = Attendance.objects.filter(school=school, date=date)
+    role = request.user.role
+
+    if role == 'student':
+        try:
+            student = Student.objects.get(user=request.user, school=school)
+            attendances = Attendance.objects.filter(school=school, student=student)
+            students = Student.objects.filter(id=student.id)
+        except Student.DoesNotExist:
+            return Response({'date': date, 'total_students': 0, 'marked': 0, 'results': []})
+    else:
+        attendances = Attendance.objects.filter(school=school, date=date)
+        students = Student.objects.filter(school=school, is_active=True)
+
     serializer = AttendanceSerializer(attendances, many=True)
-
-    # Get all students
-    students = Student.objects.filter(school=school, is_active=True)
-    marked_ids = [a.student_id for a in attendances]
-
     return Response({
         'date': date,
         'total_students': students.count(),
@@ -27,14 +33,14 @@ def attendance_list(request):
         'results': serializer.data,
     })
 
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def mark_bulk(request):
+    if request.user.role == 'student':
+        return Response({'error': 'Permission denied'}, status=403)
     school = request.user.school
     date = request.data.get('date', str(today_date.today()))
     attendances = request.data.get('attendances', [])
-
     created = 0
     updated = 0
     for item in attendances:
@@ -53,22 +59,28 @@ def mark_bulk(request):
                 updated += 1
         except Student.DoesNotExist:
             continue
-
     return Response({'message': f'Attendance saved. Created: {created}, Updated: {updated}'})
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def attendance_report(request):
     school = request.user.school
-    student_id = request.query_params.get('student_id')
-    month = request.query_params.get('month')
-
+    role = request.user.role
     attendances = Attendance.objects.filter(school=school)
-    if student_id:
-        attendances = attendances.filter(student_id=student_id)
-    if month:
-        attendances = attendances.filter(date__month=month)
+
+    if role == 'student':
+        try:
+            student = Student.objects.get(user=request.user, school=school)
+            attendances = attendances.filter(student=student)
+        except Student.DoesNotExist:
+            attendances = attendances.none()
+    else:
+        student_id = request.query_params.get('student_id')
+        month = request.query_params.get('month')
+        if student_id:
+            attendances = attendances.filter(student_id=student_id)
+        if month:
+            attendances = attendances.filter(date__month=month)
 
     serializer = AttendanceSerializer(attendances, many=True)
     return Response({'results': serializer.data})

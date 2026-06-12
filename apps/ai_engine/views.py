@@ -24,5 +24,5 @@ def chatbot(request):
     lang = request.data.get('lang', 'en')
     if not message:
         return Response({'error': 'message required'}, status=status.HTTP_400_BAD_REQUEST)
-    result = school_chatbot(message, history, lang)
+    result = school_chatbot(message, history, lang, school=request.user.school, user=request.user)
     return Response(result)

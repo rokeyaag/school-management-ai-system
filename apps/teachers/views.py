@@ -67,7 +67,7 @@ def teacher_detail(request, pk):
     if request.method == 'PATCH':
         data = request.data
         user = teacher.user
-        for field in ['full_name', 'phone']:
+        for field in ['full_name', 'phone', 'avatar']:
             if field in data:
                 setattr(user, field, data[field])
         user.save()

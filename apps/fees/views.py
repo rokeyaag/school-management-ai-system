@@ -8,7 +8,6 @@ from .models import FeeCategory, FeeSchedule, FeePayment
 from .serializers import FeeCategorySerializer, FeeScheduleSerializer, FeePaymentSerializer
 from apps.students.models import Student
 
-
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def category_list(request):
@@ -22,36 +21,40 @@ def category_list(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def payment_list(request):
     school = request.user.school
     if request.method == 'GET':
         payments = FeePayment.objects.filter(school=school)
-        student_id = request.query_params.get('student_id')
-        status_filter = request.query_params.get('status')
-        month = request.query_params.get('month')
-        year = request.query_params.get('year')
-        if student_id:
-            payments = payments.filter(student_id=student_id)
-        if status_filter:
-            payments = payments.filter(status=status_filter)
-        if month:
-            payments = payments.filter(month=month)
-        if year:
-            payments = payments.filter(year=year)
+        if request.user.role == 'student':
+            try:
+                student = Student.objects.get(user=request.user, school=school)
+                payments = payments.filter(student=student)
+            except Student.DoesNotExist:
+                payments = payments.none()
+        else:
+            student_id = request.query_params.get('student_id')
+            status_filter = request.query_params.get('status')
+            month = request.query_params.get('month')
+            year = request.query_params.get('year')
+            if student_id:
+                payments = payments.filter(student_id=student_id)
+            if status_filter:
+                payments = payments.filter(status=status_filter)
+            if month:
+                payments = payments.filter(month=month)
+            if year:
+                payments = payments.filter(year=year)
         return Response({
             'count': payments.count(),
             'results': FeePaymentSerializer(payments, many=True).data
         })
-
     serializer = FeePaymentSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(school=school)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
@@ -63,16 +66,21 @@ def payment_detail(request, pk):
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def fee_report(request):
     school = request.user.school
     student_id = request.query_params.get('student_id')
-    students = Student.objects.filter(school=school, is_active=True)
-    if student_id:
-        students = students.filter(id=student_id)
-
+    if request.user.role == 'student':
+        try:
+            student = Student.objects.get(user=request.user, school=school)
+            students = [student]
+        except Student.DoesNotExist:
+            students = []
+    else:
+        students = Student.objects.filter(school=school, is_active=True)
+        if student_id:
+            students = students.filter(id=student_id)
     report = []
     for student in students:
         payments = FeePayment.objects.filter(student=student, school=school)
@@ -87,7 +95,6 @@ def fee_report(request):
             'due_amount': due,
         })
     return Response(report)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

@@ -26,6 +26,12 @@ def generate_student_id(school):
 def student_list(request):
     if request.method == 'GET':
         school = request.user.school
+        if request.user.role == 'student':
+            try:
+                student = Student.objects.get(user=request.user, school=school)
+                return Response({'count': 1, 'results': [StudentSerializer(student).data]})
+            except Student.DoesNotExist:
+                return Response({'count': 0, 'results': []})
         students = Student.objects.filter(school=school, is_active=True)
         class_id = request.query_params.get('class_id')
         section_id = request.query_params.get('section_id')
