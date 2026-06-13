@@ -20,6 +20,7 @@ class School(models.Model):
     academic_year = models.CharField(max_length=10, default='2025-26')
     plan = models.CharField(max_length=10, choices=PLAN_CHOICES, default='basic')
     is_active = models.BooleanField(default=True)
+    is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

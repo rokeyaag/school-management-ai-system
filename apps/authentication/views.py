@@ -41,6 +41,8 @@ def login(request):
         if user.check_password(password):
             if not user.is_active:
                 return Response({'error': 'Account is disabled'}, status=status.HTTP_400_BAD_REQUEST)
+            if user.role == 'school_admin' and user.school and not user.school.is_approved:
+                return Response({'non_field_errors': ['Your school is pending approval. Please contact admin.']}, status=status.HTTP_403_FORBIDDEN)
             tokens = get_tokens(user)
             return Response({
                 'user': UserSerializer(user).data,
