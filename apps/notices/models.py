@@ -2,7 +2,6 @@ from django.db import models
 from apps.tenants.models import School
 from apps.authentication.models import CustomUser
 
-
 class Notice(models.Model):
     TARGET_CHOICES = [
         ('all', 'All'),
@@ -11,7 +10,6 @@ class Notice(models.Model):
         ('parent', 'Parents'),
         ('admin', 'Admin'),
     ]
-
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='notices')
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='notices')
     title = models.CharField(max_length=200)
@@ -19,6 +17,7 @@ class Notice(models.Model):
     target_role = models.CharField(max_length=10, choices=TARGET_CHOICES, default='all')
     attachment = models.URLField(blank=True)
     is_active = models.BooleanField(default=True)
+    read_by = models.ManyToManyField(CustomUser, blank=True, related_name='read_notices')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
