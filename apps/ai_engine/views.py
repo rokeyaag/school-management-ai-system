@@ -135,3 +135,75 @@ def school_health(request):
     messages = [{'role': 'user', 'content': prompt}]
     result = chat(messages)
     return Response({'report': result})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def question_generator(request):
+    subject = request.data.get('subject', '')
+    class_name = request.data.get('class_name', '')
+    topic = request.data.get('topic', '')
+    difficulty = request.data.get('difficulty', 'medium')
+    num_mcq = request.data.get('num_mcq', 5)
+    num_short = request.data.get('num_short', 3)
+    lang = request.data.get('lang', 'en')
+    school = request.user.school
+
+    if lang == 'bn':
+        prompt = f'You are an experienced teacher at {school.name}. Generate exam questions in Bengali for:\nSubject: {subject}\nClass: {class_name}\nTopic: {topic}\nDifficulty: {difficulty}\n\nGenerate exactly:\n{num_mcq} MCQ questions (with 4 options A/B/C/D and correct answer)\n{num_short} Short questions (with model answers)\n\nFormat clearly with sections: MCQ Questions, Short Questions.'
+    else:
+        prompt = f'You are an experienced teacher at {school.name}. Generate exam questions for:\nSubject: {subject}\nClass: {class_name}\nTopic: {topic}\nDifficulty: {difficulty}\n\nGenerate exactly:\n{num_mcq} MCQ questions (with 4 options A/B/C/D and correct answer marked)\n{num_short} Short questions (with model answers)\n\nFormat clearly with sections: MCQ Questions, Short Questions.'
+
+    messages = [{'role': 'user', 'content': prompt}]
+    result = chat(messages)
+    return Response({'questions': result})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def attendance_predictor(request):
+    lang = request.data.get('lang', request.query_params.get('lang', 'en'))
+    school = request.user.school
+    from apps.students.models import Student
+    from apps.attendance.models import Attendance
+
+    students = Student.objects.filter(school=school, is_active=True).select_related('user', 'class_name')
+    at_risk = []
+    good = []
+
+    for student in students:
+        att = Attendance.objects.filter(student=student, school=school)
+        total = att.count()
+        present = att.filter(status='present').count()
+        absent = att.filter(status='absent').count()
+        rate = round((present / total * 100), 1) if total > 0 else 0
+        data = {
+            'name': student.user.full_name,
+            'class': student.class_name.name if student.class_name else 'N/A',
+            'total': total,
+            'present': present,
+            'absent': absent,
+            'rate': rate
+        }
+        if rate < 75 or absent >= 5:
+            at_risk.append(data)
+        else:
+            good.append(data)
+
+    at_risk_summary = '\n'.join([f"- {s['name']} (Class: {s['class']}, Rate: {s['rate']}%, Absent: {s['absent']} days)" for s in at_risk]) or 'None'
+    good_summary = '\n'.join([f"- {s['name']} (Rate: {s['rate']}%)" for s in good]) or 'None'
+
+    if lang == 'bn':
+        prompt = f'তুমি {school.name} এর attendance analyst। নিচের data বিশ্লেষণ করে বাংলায় report দাও।\n\nAt-Risk Students (75% এর নিচে বা 5+ absent):\n{at_risk_summary}\n\nGood Attendance:\n{good_summary}\n\nপ্রতিটি at-risk student এর জন্য কারণ ও সমাধান দাও।'
+    else:
+        prompt = f'You are an attendance analyst for {school.name}. Analyze the data below and provide insights.\n\nAt-Risk Students (below 75% or 5+ absences):\n{at_risk_summary}\n\nGood Attendance Students:\n{good_summary}\n\nProvide: 1) Summary 2) Risk analysis for each at-risk student 3) Recommendations for improvement.'
+
+    messages = [{'role': 'user', 'content': prompt}]
+    from .groq_client import chat
+    result = chat(messages)
+    return Response({
+        'at_risk': at_risk,
+        'good': good,
+        'analysis': result,
+        'summary': {
+            'total_students': len(at_risk) + len(good),
+            'at_risk_count': len(at_risk),
+            'good_count': len(good)
+        }
+    })
