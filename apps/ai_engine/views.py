@@ -1,6 +1,9 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from .groq_client import chat
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework import status
 from .performance import analyze_student_performance
 from .chatbot import school_chatbot
@@ -26,3 +29,109 @@ def chatbot(request):
         return Response({'error': 'message required'}, status=status.HTTP_400_BAD_REQUEST)
     result = school_chatbot(message, history, lang, school=request.user.school, user=request.user)
     return Response(result)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def lesson_plan(request):
+    subject = request.data.get('subject', '')
+    topic = request.data.get('topic', '')
+    class_name = request.data.get('class_name', '')
+    duration = request.data.get('duration', '45')
+    lang = request.data.get('lang', 'en')
+    school = request.user.school
+    if lang == 'bn':
+        prompt = f'You are a teacher at {school.name}. Create a detailed lesson plan in Bengali for teaching "{topic}" in {subject} for {class_name} students. Duration: {duration} minutes. Include: objectives, materials, introduction, main activities, assessment, and homework.'
+    else:
+        prompt = f'You are a teacher at {school.name}. Create a detailed lesson plan for teaching "{topic}" in {subject} for {class_name} students. Duration: {duration} minutes. Include: learning objectives, materials needed, introduction (5 min), main activities, assessment, and homework assignment.'
+    messages = [{'role': 'user', 'content': prompt}]
+    result = chat(messages)
+    return Response({'plan': result})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def study_recommendation(request):
+    lang = request.data.get('lang', 'en')
+    student_id = request.data.get('student_id')
+    school = request.user.school
+    from apps.exams.models import Marks
+    from apps.students.models import Student
+    from apps.attendance.models import Attendance
+    if request.user.role == 'student':
+        try:
+            student = Student.objects.get(user=request.user)
+            student_id = student.id
+            student_name = student.full_name or str(student)
+        except:
+            student_name = 'Student'
+    elif student_id:
+        try:
+            student = Student.objects.get(id=student_id)
+            student_name = student.full_name or str(student)
+        except:
+            student_name = 'Student'
+    else:
+        student_name = 'the student'
+    marks = Marks.objects.filter(student_id=student_id, exam__school=school) if student_id else Marks.objects.filter(exam__school=school)
+    attendance = Attendance.objects.filter(student_id=student_id, school=school) if student_id else []
+    marks_summary = []
+    for m in marks[:20]:
+        marks_summary.append(f"{m.subject.name}: {m.marks_obtained}/{m.total_marks} ({m.grade})")
+    total_days = len(attendance)
+    present_days = len([a for a in attendance if a.status == 'present'])
+    absent_days = len([a for a in attendance if a.status == 'absent'])
+    attendance_pct = round((present_days / total_days * 100), 1) if total_days > 0 else 0
+    fee_data = 'No fee data.'
+    try:
+        from apps.fees.models import FeePayment as Payment
+        fees = Payment.objects.filter(student_id=student_id, school=school) if student_id else []
+        if fees:
+            paid = len([f for f in fees if f.status == 'paid'])
+            due = len([f for f in fees if f.status == 'due'])
+            fee_data = f'Paid: {paid}, Due: {due}'
+    except:
+        pass
+    marks_data = "\n".join(marks_summary) if marks_summary else "No exam data yet."
+    fee_info = fee_data
+    attendance_data = f"Total: {total_days} days, Present: {present_days}, Absent: {absent_days}, Rate: {attendance_pct}%"
+    if lang == 'bn':
+        prompt = f'You are an educational advisor at {school.name}. Create a detailed personalized study recommendation in Bengali for {student_name}.\n\nExam Results:\n{marks_data}\n\nAttendance:\n{attendance_data}\n\nFee Status:\n{fee_info}\n\nProvide: 1) Subject-wise improvement tips 2) Study schedule 3) Attendance advice if needed 4) Overall motivation.'
+    else:
+        prompt = f'You are an educational advisor at {school.name}. Create a detailed personalized study recommendation for {student_name}.\n\nExam Results:\n{marks_data}\n\nAttendance:\n{attendance_data}\n\nFee Status:\n{fee_info}\n\nProvide: 1) Subject-wise improvement tips for weak subjects 2) Recommended daily study schedule 3) Attendance advice if needed 4) Overall encouragement. Note fee issues sensitively if any.'
+    messages = [{'role': 'user', 'content': prompt}]
+    result = chat(messages)
+    return Response({'recommendation': result})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def school_health(request):
+    lang = request.data.get('lang', 'en')
+    school = request.user.school
+    from apps.students.models import Student
+    from apps.teachers.models import Teacher
+    from apps.attendance.models import Attendance
+    from apps.fees.models import FeePayment as Payment
+    from apps.notices.models import Notice
+    from apps.exams.models import Marks
+    students = Student.objects.filter(school=school).count()
+    teachers = Teacher.objects.filter(school=school).count()
+    att = Attendance.objects.filter(school=school)
+    total_att = att.count()
+    present = att.filter(status='present').count()
+    att_rate = round(present / total_att * 100, 1) if total_att > 0 else 0
+    payments = Payment.objects.filter(school=school)
+    paid = payments.filter(status='paid').count()
+    due = payments.filter(status='due').count()
+    notices = Notice.objects.filter(school=school, is_active=True).count()
+    marks = Marks.objects.filter(exam__school=school)
+    avg_marks = 0
+    if marks.exists():
+        total = sum(m.marks_obtained for m in marks if m.marks_obtained)
+        avg_marks = round(total / marks.count(), 1)
+    summary = f"School: {school.name}\nStudents: {students}, Teachers: {teachers}\nAttendance Rate: {att_rate}%\nFees Paid: {paid}, Due: {due}\nNotices: {notices}\nAvg Exam Score: {avg_marks}"
+    if lang == 'bn':
+        prompt = f'You are a school health analyst. Analyze this school data and provide a comprehensive health report in Bengali with recommendations.\n\n{summary}'
+    else:
+        prompt = f'You are a school health analyst. Analyze this school data and provide a comprehensive health report with key insights, concerns, and recommendations for improvement.\n\n{summary}'
+    messages = [{'role': 'user', 'content': prompt}]
+    result = chat(messages)
+    return Response({'report': result})
