@@ -8,4 +8,5 @@ urlpatterns = [
     path('school-health/', views.school_health, name='ai-school-health'),
     path('question-generator/', views.question_generator, name='ai-question-generator'),
     path('attendance-predictor/', views.attendance_predictor, name='ai-attendance-predictor'),
+    path('fee-defaulter/', views.fee_defaulter, name='ai-fee-defaulter'),
 ]

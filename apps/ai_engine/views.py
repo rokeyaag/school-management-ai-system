@@ -207,3 +207,58 @@ def attendance_predictor(request):
             'good_count': len(good)
         }
     })
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def fee_defaulter(request):
+    lang = request.query_params.get('lang', 'en')
+    school = request.user.school
+    from apps.students.models import Student
+    from apps.fees.models import FeePayment
+
+    students = Student.objects.filter(school=school, is_active=True).select_related('user', 'class_name')
+    defaulters = []
+    good = []
+
+    for student in students:
+        fees = FeePayment.objects.filter(student=student, school=school)
+        total = fees.count()
+        paid = fees.filter(status='paid').count()
+        due = fees.filter(status='due').count()
+        due_amount = sum(f.amount for f in fees.filter(status='due'))
+        paid_amount = sum(f.paid_amount or 0 for f in fees.filter(status='paid'))
+        data = {
+            'name': student.user.full_name,
+            'class': student.class_name.name if student.class_name else 'N/A',
+            'total': total,
+            'paid': paid,
+            'due': due,
+            'due_amount': float(due_amount),
+            'paid_amount': float(paid_amount),
+        }
+        if due > 0:
+            defaulters.append(data)
+        else:
+            good.append(data)
+
+    defaulter_summary = '\n'.join([f"- {s['name']} (Class: {s['class']}, Due: {s['due']} months, Amount: {s['due_amount']} BDT)" for s in defaulters]) or 'None'
+    good_summary = '\n'.join([f"- {s['name']} (Paid: {s['paid']} months)" for s in good]) or 'None'
+
+    if lang == 'bn':
+        prompt = f'তুমি {school.name} এর fee analyst। নিচের data বিশ্লেষণ করে বাংলায় report দাও।\n\nFee Defaulters:\n{defaulter_summary}\n\nRegular Payers:\n{good_summary}\n\nপ্রতিটি defaulter এর জন্য সমাধান ও action plan দাও।'
+    else:
+        prompt = f'You are a fee analyst for {school.name}. Analyze the fee data below.\n\nFee Defaulters:\n{defaulter_summary}\n\nRegular Payers:\n{good_summary}\n\nProvide: 1) Summary 2) Risk level for each defaulter 3) Recommended actions for fee recovery.'
+
+    messages = [{'role': 'user', 'content': prompt}]
+    from .groq_client import chat
+    result = chat(messages)
+    return Response({
+        'defaulters': defaulters,
+        'good': good,
+        'analysis': result,
+        'summary': {
+            'total_students': len(defaulters) + len(good),
+            'defaulter_count': len(defaulters),
+            'good_count': len(good),
+            'total_due_amount': sum(s['due_amount'] for s in defaulters),
+        }
+    })
