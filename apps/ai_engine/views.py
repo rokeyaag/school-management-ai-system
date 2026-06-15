@@ -262,3 +262,98 @@ def fee_defaulter(request):
             'total_due_amount': sum(s['due_amount'] for s in defaulters),
         }
     })
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def parent_progress_report(request):
+    lang = request.data.get('lang', 'en')
+    student_id = request.data.get('student_id')
+    school = request.user.school
+    from apps.students.models import Student
+    from apps.attendance.models import Attendance
+    from apps.exams.models import Marks
+    from apps.fees.models import FeePayment
+
+    try:
+        student = Student.objects.get(id=student_id, school=school)
+    except Student.DoesNotExist:
+        return Response({'error': 'Student not found'}, status=404)
+
+    marks = Marks.objects.filter(student=student).select_related('subject', 'exam')
+    marks_info = '\n'.join([f"- {m.subject.name}: {m.marks_obtained}/{m.total_marks} (Grade: {m.grade})" for m in marks])
+
+    att = Attendance.objects.filter(student=student, school=school)
+    total = att.count()
+    present = att.filter(status='present').count()
+    absent = att.filter(status='absent').count()
+    att_rate = round((present / total * 100), 1) if total > 0 else 0
+
+    fees = FeePayment.objects.filter(student=student, school=school)
+    paid = fees.filter(status='paid').count()
+    due = fees.filter(status='due').count()
+    due_amount = float(sum(f.amount for f in fees.filter(status='due')))
+
+    student_name = student.user.full_name
+    class_name = student.class_name.name if student.class_name else 'N/A'
+    roll = student.roll or 'N/A'
+
+    if lang == 'bn':
+        prompt = f'''তুমি {school.name} এর একজন শিক্ষক। {student_name} এর অভিভাবকের জন্য বাংলায় একটি সম্পূর্ণ progress report লিখো।
+
+ছাত্র/ছাত্রীর তথ্য:
+নাম: {student_name}
+শ্রেণী: {class_name}
+রোল: {roll}
+
+পরীক্ষার ফলাফল:
+{marks_info if marks_info else 'কোনো ফলাফল নেই'}
+
+উপস্থিতি:
+মোট: {total} দিন | উপস্থিত: {present} | অনুপস্থিত: {absent} | হার: {att_rate}%
+
+ফি অবস্থা:
+পরিশোধিত: {paid} | বাকি: {due} | বাকি পরিমাণ: ৳{due_amount}
+
+একটি professional ও সহানুভূতিশীল report লিখো যেখানে থাকবে:
+১) সামগ্রিক মূল্যায়ন
+২) বিষয়ভিত্তিক মন্তব্য
+৩) উপস্থিতি মন্তব্য
+৪) অভিভাবকের জন্য পরামর্শ
+৫) উৎসাহমূলক বার্তা'''
+    else:
+        prompt = f'''You are a teacher at {school.name}. Write a complete parent progress report for {student_name}.
+
+Student Information:
+Name: {student_name}
+Class: {class_name}
+Roll: {roll}
+
+Exam Results:
+{marks_info if marks_info else 'No exam results yet'}
+
+Attendance:
+Total: {total} days | Present: {present} | Absent: {absent} | Rate: {att_rate}%
+
+Fee Status:
+Paid: {paid} | Due: {due} | Due Amount: ৳{due_amount}
+
+Write a professional and caring report including:
+1) Overall Assessment
+2) Subject-wise comments
+3) Attendance remarks
+4) Recommendations for parents
+5) Encouraging closing message'''
+
+    messages = [{'role': 'user', 'content': prompt}]
+    from .groq_client import chat
+    result = chat(messages)
+    return Response({
+        'report': result,
+        'student': {
+            'name': student_name,
+            'class': class_name,
+            'roll': roll,
+            'attendance_rate': att_rate,
+            'fees_due': due,
+            'due_amount': due_amount,
+        }
+    })
