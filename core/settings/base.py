@@ -147,3 +147,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTHENTICATION_BACKENDS = [
     'apps.authentication.backends.EmailBackend',
 ]
+
+import os
+import cloudinary
+cloudinary.config(
+    cloud_name='dr7c7wxaw',
+    api_key='789361913316925',
+    api_secret='i2l5KwjODtAk6FvpZtDJjdvKLt4',
+)
