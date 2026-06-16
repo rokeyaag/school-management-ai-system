@@ -4,15 +4,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from groq import Groq
 import requests
+from decouple import config
 from apps.tenants.models import School
 from apps.students.models import Student
 from apps.teachers.models import Teacher
-from apps.attendance.models import Attendance
 from apps.notices.models import Notice
+from apps.attendance.models import Attendance
 from datetime import date
 
-SLACK_BOT_TOKEN = "xoxb-11355788501991-11365329464595-d7mIlsBy0LWMGXfMlQ3LrjDX"
-GROQ_API_KEY = "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"
+SLACK_BOT_TOKEN = config('SLACK_BOT_TOKEN', default='')
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
 
 def ai_generate(prompt):
     client = Groq(api_key=GROQ_API_KEY)
