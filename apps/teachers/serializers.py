@@ -29,6 +29,7 @@ class TeacherCreateSerializer(serializers.Serializer):
     qualification = serializers.CharField(required=False, allow_blank=True)
     join_date = serializers.DateField(required=False, allow_null=True)
     salary = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    avatar = serializers.URLField(required=False, allow_blank=True)
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():

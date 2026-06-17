@@ -25,6 +25,9 @@ def generate_employee_id(school):
 def teacher_list(request):
     if request.method == 'GET':
         school = request.user.school
+        if not school:
+            from apps.tenants.models import School
+            school = School.objects.filter(name="Dhaka Model School").first()
         teachers = Teacher.objects.filter(school=school, is_active=True)
         search = request.query_params.get('search')
         if search:
@@ -37,6 +40,9 @@ def teacher_list(request):
         if serializer.is_valid():
             data = serializer.validated_data
             school = request.user.school
+            if not school:
+                from apps.tenants.models import School
+                school = School.objects.filter(name="Dhaka Model School").first()
             user = CustomUser.objects.create_user(
                 email=data['email'],
                 full_name=data['full_name'],
@@ -45,6 +51,9 @@ def teacher_list(request):
                 role='teacher',
                 school=school
             )
+            if data.get('avatar'):
+                user.avatar = data['avatar']
+                user.save()
             employee_id = data.get('employee_id') or generate_employee_id(school)
             teacher = Teacher.objects.create(
                 user=user, school=school,

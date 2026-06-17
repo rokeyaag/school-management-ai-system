@@ -2,6 +2,8 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from . import settings_views
+from . import parent_views
+
 urlpatterns = [
     path('register/', views.register, name='register'),
     path('login/', views.login, name='login'),
@@ -15,4 +17,6 @@ urlpatterns = [
     path('settings/avatar/', settings_views.upload_avatar, name='upload-avatar'),
     path('settings/school/', settings_views.school_settings, name='school-settings'),
     path('settings/school-logo/', settings_views.upload_school_logo, name='upload-school-logo'),
+    path('parent/dashboard/', parent_views.parent_dashboard, name='parent-dashboard'),
+    path('parent/create/', parent_views.create_parent, name='create-parent'),
 ]

@@ -155,3 +155,8 @@ cloudinary.config(
     api_key='789361913316925',
     api_secret='i2l5KwjODtAk6FvpZtDJjdvKLt4',
 )
+# SMS Settings
+SMS_ENABLED = False
+SMS_API_URL = "https://smpp.sslwireless.com/api/v3/send-sms"
+SMS_API_TOKEN = "your-api-token-here"
+SMS_SID = "your-sid-here"
