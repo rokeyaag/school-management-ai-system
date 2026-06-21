@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/subscriptions/', include('apps.subscriptions.urls')),
     path('api/ai/', include('apps.ai_engine.urls')),
     path('api/accounting/', include('apps.accounting.urls')),
+    path('api/knowledge-base/', include('apps.knowledge_base.urls')),
     path('api/gallery/', include('apps.gallery.urls')),
     path('api/slack/', include('apps.slack_bot.urls')),
 ]
