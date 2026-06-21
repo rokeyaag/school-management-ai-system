@@ -1,20 +1,11 @@
 from rest_framework import serializers
-from .models import FeeCategory, FeeSchedule, FeePayment
+from .models import FeeCategory, FeePayment
 
 
 class FeeCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = FeeCategory
         fields = ['id', 'name', 'description', 'is_active']
-        read_only_fields = ['id']
-
-
-class FeeScheduleSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source='category.name', read_only=True)
-
-    class Meta:
-        model = FeeSchedule
-        fields = ['id', 'category', 'category_name', 'amount', 'month', 'year', 'due_date', 'is_recurring']
         read_only_fields = ['id']
 
 
@@ -31,10 +22,3 @@ class FeePaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
-class FeeReportSerializer(serializers.Serializer):
-    student_id = serializers.IntegerField()
-    student_name = serializers.CharField()
-    total_amount = serializers.FloatField()
-    paid_amount = serializers.FloatField()
-    due_amount = serializers.FloatField()
-    payments = FeePaymentSerializer(many=True)

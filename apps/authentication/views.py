@@ -97,8 +97,5 @@ def forgot_password(request):
     email = request.data.get('email', '').strip()
     if not email:
         return Response({'error': 'Email required'}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        user = CustomUser.objects.get(email=email)
-        return Response({'message': 'Password reset link sent to your email.'})
-    except CustomUser.DoesNotExist:
-        return Response({'error': 'Email not found'}, status=status.HTTP_404_NOT_FOUND)
+    # TODO: integrate an email service to actually send reset links
+    return Response({'message': 'If an account with that email exists, a password reset link has been sent.'})

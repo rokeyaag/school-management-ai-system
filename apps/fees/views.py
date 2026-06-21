@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum
 from .models import FeeCategory, FeeSchedule, FeePayment
-from .serializers import FeeCategorySerializer, FeeScheduleSerializer, FeePaymentSerializer
+from .serializers import FeeCategorySerializer, FeePaymentSerializer
 from apps.students.models import Student
 
 @api_view(['GET', 'POST'])
