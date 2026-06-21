@@ -11,6 +11,7 @@ urlpatterns = [
     path('salaries/', views.salary_list, name='salary-list'),
     path('salaries/<int:pk>/', views.salary_detail, name='salary-detail'),
     path('salary-teachers/', views.salary_teachers, name='salary-teachers'),
+    path('ai-financial-report/', views.ai_financial_report, name='ai-financial-report'),
     path('ai-financial-health/', views.ai_financial_health, name='ai-financial-health'),
     path('ai-expense-optimization/', views.ai_expense_optimization, name='ai-expense-optimization'),
     path('ai-salary-report/', views.ai_salary_report, name='ai-salary-report'),

@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from .models import GalleryAlbum, GalleryPhoto
 from .serializers import GalleryAlbumSerializer, GalleryPhotoSerializer
 import cloudinary.uploader
@@ -26,7 +27,7 @@ class GalleryAlbumViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not is_admin(self.request.user):
-            raise PermissionError("Only admin can create albums.")
+            raise PermissionDenied("Only admin can create albums.")
         school = get_school(self.request.user)
         serializer.save(school=school)
 

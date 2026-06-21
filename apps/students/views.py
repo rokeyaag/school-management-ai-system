@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.db import IntegrityError
 from .models import Student, Guardian
 from .serializers import StudentSerializer, StudentCreateSerializer, GuardianSerializer
 from apps.authentication.models import CustomUser
@@ -48,21 +49,21 @@ def student_list(request):
         return Response({'count': students.count(), 'results': serializer.data})
 
     if request.method == 'POST':
-        print("=== STUDENT CREATE REQUEST ===")
-        print("DATA:", request.data)
         serializer = StudentCreateSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
             school = request.user.school
-            print("SCHOOL:", school)
-            user = CustomUser.objects.create_user(
-                email=data['email'],
-                full_name=data['full_name'],
-                phone=data.get('phone', ''),
-                password=data['password'],
-                role='student',
-                school=school
-            )
+            try:
+                user = CustomUser.objects.create_user(
+                    email=data['email'],
+                    full_name=data['full_name'],
+                    phone=data.get('phone', ''),
+                    password=data['password'],
+                    role='student',
+                    school=school
+                )
+            except IntegrityError:
+                return Response({'email': ['This email is already registered.']}, status=status.HTTP_400_BAD_REQUEST)
             class_obj = None
             section_obj = None
             if data.get('class_name'):
@@ -97,7 +98,6 @@ def student_list(request):
                 guardian_relation=data.get('guardian_relation', ''),
             )
             return Response(StudentSerializer(student).data, status=status.HTTP_201_CREATED)
-        print("ERRORS:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

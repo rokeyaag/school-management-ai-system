@@ -1,10 +1,8 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .groq_client import chat
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework import status
+from .groq_client import chat
 from .performance import analyze_student_performance
 from .chatbot import school_chatbot
 

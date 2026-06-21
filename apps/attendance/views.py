@@ -55,14 +55,14 @@ def mark_bulk(request):
             )
             if created_flag:
                 created += 1
+            else:
+                updated += 1
             if att_status == 'absent':
                 try:
                     from apps.students.sms_service import send_absence_sms
                     send_absence_sms(student)
                 except Exception as e:
                     print(f"SMS Error: {e}")
-            else:
-                updated += 1
         except Student.DoesNotExist:
             continue
     return Response({'message': f'Attendance saved. Created: {created}, Updated: {updated}'})
