@@ -19,6 +19,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
     'cloudinary',
@@ -152,9 +153,9 @@ AUTHENTICATION_BACKENDS = [
 import os
 import cloudinary
 cloudinary.config(
-    cloud_name='dr7c7wxaw',
-    api_key='789361913316925',
-    api_secret='i2l5KwjODtAk6FvpZtDJjdvKLt4',
+    cloud_name=config('CLOUDINARY_CLOUD_NAME', default=''),
+    api_key=config('CLOUDINARY_API_KEY', default=''),
+    api_secret=config('CLOUDINARY_API_SECRET', default=''),
 )
 # SMS Settings
 SMS_ENABLED = False

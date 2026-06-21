@@ -27,8 +27,7 @@ def get_image_from_url(url, width=2*cm, height=2.5*cm):
 def student_list_pdf(request):
     school = request.user.school
     if not school:
-        from apps.tenants.models import School
-        school = School.objects.filter(name="Dhaka Model School").first()
+        return HttpResponse('No school assigned', status=403)
     class_id = request.query_params.get('class_id')
     students = Student.objects.filter(school=school, is_active=True).select_related('user', 'class_name')
     if class_id:

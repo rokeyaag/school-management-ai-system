@@ -60,13 +60,13 @@ def study_recommendation(request):
         try:
             student = Student.objects.get(user=request.user)
             student_id = student.id
-            student_name = student.full_name or str(student)
+            student_name = student.user.full_name or str(student)
         except:
             student_name = 'Student'
     elif student_id:
         try:
             student = Student.objects.get(id=student_id)
-            student_name = student.full_name or str(student)
+            student_name = student.user.full_name or str(student)
         except:
             student_name = 'Student'
     else:

@@ -136,8 +136,7 @@ def make_id_card(canvas, school, student, x, y):
 def student_id_cards_pdf(request):
     school = request.user.school
     if not school:
-        from apps.tenants.models import School
-        school = School.objects.filter(name="Dhaka Model School").first()
+        return HttpResponse('No school assigned', status=403)
     class_id = request.query_params.get('class_id')
     student_id = request.query_params.get('student_id')
 

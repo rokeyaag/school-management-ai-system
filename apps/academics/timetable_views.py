@@ -8,15 +8,15 @@ from apps.tenants.models import School
 
 
 def get_school(user):
-    if user.school:
-        return user.school
-    return School.objects.filter(name="Dhaka Model School").first()
+    return user.school
 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def timetable_list(request):
     school = get_school(request.user)
+    if not school:
+        return Response({'error': 'No school assigned'}, status=status.HTTP_403_FORBIDDEN)
     if request.method == 'GET':
         section_id = request.query_params.get('section_id')
         class_id = request.query_params.get('class_id')
@@ -62,8 +62,11 @@ def timetable_list(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def timetable_detail(request, pk):
+    school = get_school(request.user)
+    if not school:
+        return Response({'error': 'No school assigned'}, status=status.HTTP_403_FORBIDDEN)
     try:
-        entry = Timetable.objects.get(pk=pk)
+        entry = Timetable.objects.get(pk=pk, section__school=school)
         entry.delete()
         return Response({'message': 'Deleted'})
     except Timetable.DoesNotExist:

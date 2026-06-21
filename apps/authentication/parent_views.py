@@ -12,9 +12,7 @@ from apps.tenants.models import School
 
 
 def get_school(user):
-    if user.school:
-        return user.school
-    return School.objects.filter(name="Dhaka Model School").first()
+    return user.school
 
 
 @api_view(['GET'])
@@ -22,6 +20,8 @@ def get_school(user):
 def parent_dashboard(request):
     user = request.user
     school = get_school(user)
+    if not school:
+        return Response({'error': 'No school assigned'}, status=status.HTTP_403_FORBIDDEN)
 
     # Find children via guardian mobile or father/mother mobile
     children = Student.objects.filter(
@@ -101,6 +101,8 @@ def parent_dashboard(request):
 def create_parent(request):
     """Create parent account linked to student by mobile"""
     school = get_school(request.user)
+    if not school:
+        return Response({'error': 'No school assigned'}, status=status.HTTP_403_FORBIDDEN)
     data = request.data
 
     email = data.get('email', '').strip()

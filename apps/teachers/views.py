@@ -26,8 +26,7 @@ def teacher_list(request):
     if request.method == 'GET':
         school = request.user.school
         if not school:
-            from apps.tenants.models import School
-            school = School.objects.filter(name="Dhaka Model School").first()
+            return Response({'error': 'No school assigned'}, status=status.HTTP_403_FORBIDDEN)
         teachers = Teacher.objects.filter(school=school, is_active=True)
         search = request.query_params.get('search')
         if search:
@@ -41,8 +40,7 @@ def teacher_list(request):
             data = serializer.validated_data
             school = request.user.school
             if not school:
-                from apps.tenants.models import School
-                school = School.objects.filter(name="Dhaka Model School").first()
+                return Response({'error': 'No school assigned'}, status=status.HTTP_403_FORBIDDEN)
             user = CustomUser.objects.create_user(
                 email=data['email'],
                 full_name=data['full_name'],

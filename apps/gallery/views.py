@@ -9,10 +9,7 @@ import cloudinary
 import os
 
 def get_school(user):
-    if hasattr(user, 'school') and user.school:
-        return user.school
-    from apps.tenants.models import School
-    return School.objects.first()
+    return user.school if hasattr(user, 'school') else None
 
 def is_admin(user):
     return user.role in ['school_admin', 'super_admin']

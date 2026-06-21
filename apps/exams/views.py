@@ -54,13 +54,13 @@ def result_list(request, exam_id):
 @permission_classes([IsAuthenticated])
 def result_update(request, exam_id, result_id):
     try:
-        result = Marks.objects.get(pk=result_id, exam_id=exam_id)
+        result = Marks.objects.get(pk=result_id, exam_id=exam_id, exam__school=request.user.school)
         serializer = MarksSerializer(result, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except ExamResult.DoesNotExist:
+    except Marks.DoesNotExist:
         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['POST'])
