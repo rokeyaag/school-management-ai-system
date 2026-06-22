@@ -15,3 +15,8 @@ whitenoise==6.6.0
 setuptools
 
 reportlab
+pdfplumber
+pypdfium2
+chromadb
+sentence-transformers
+torch
