@@ -1,5 +1,9 @@
 from pathlib import Path
 from decouple import config
+import os
+import dj_database_url
+import cloudinary
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -79,27 +83,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-import dj_database_url, os
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     DATABASES = {'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
 else:
-    import dj_database_url, os
-
-    DATABASE_URL = os.environ.get('DATABASE_URL')
-    if DATABASE_URL:
-        DATABASES = {'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
-    else:
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': config('DB_NAME', default='school_db'),
-                'USER': config('DB_USER', default='postgres'),
-                'PASSWORD': config('DB_PASSWORD', default=''),
-                'HOST': config('DB_HOST', default='localhost'),
-                'PORT': config('DB_PORT', default='5432'),
-            }
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='school_db'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
         }
+    }
 
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
@@ -151,7 +148,6 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
@@ -168,14 +164,12 @@ AUTHENTICATION_BACKENDS = [
     'apps.authentication.backends.EmailBackend',
 ]
 
-import os
-import cloudinary
 cloudinary.config(
     cloud_name=config('CLOUDINARY_CLOUD_NAME', default=''),
     api_key=config('CLOUDINARY_API_KEY', default=''),
     api_secret=config('CLOUDINARY_API_SECRET', default=''),
 )
-# SMS Settings
+
 SMS_ENABLED = False
 SMS_API_URL = "https://smpp.sslwireless.com/api/v3/send-sms"
 SMS_API_TOKEN = "your-api-token-here"
