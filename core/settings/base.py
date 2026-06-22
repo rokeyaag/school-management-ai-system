@@ -83,9 +83,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES = {'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
+_db_url = os.environ.get('DATABASE_URL') or config('DATABASE_URL', default='')
+if _db_url:
+    DATABASES = {'default': dj_database_url.parse(_db_url, conn_max_age=600)}
 else:
     DATABASES = {
         'default': {
